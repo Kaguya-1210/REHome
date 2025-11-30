@@ -13,7 +13,5 @@
 </template>
 
 <style scoped>
-.common-layout {
-  padding-bottom: 0;
-}
+
 </style>
