@@ -4,7 +4,7 @@
   <div class="common-layout">
     <el-container>
       <el-header style="background-color: white;">
-        
+        Admin
       </el-header>
 
       <el-main style="background-color: rgb(224, 226, 228);display: flex; height: 100vh;">Main</el-main>

@@ -4,7 +4,12 @@ const routes = [
   {
     path: '/',
     name: 'home',
-    component: () => import('@/views/REHomeAdmin.vue'),
+    component: () => import('@/views/Home/Home.vue'),
+  },
+  {
+    path: '/admin',
+    name: 'admin',
+    component: () => import('@/views/Admin/REHomeAdmin.vue'),
   }
 ]
 
