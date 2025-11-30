@@ -15,7 +15,20 @@
             <template #header style="display: flex;">
               <el-text type="Default" style="font-size: 150%;">管理员登录</el-text>
             </template>
-            
+            <el-form ref="formRef" :model="form" label-width="auto"> 
+                <el-form-item>
+                  <el-input v-model="input" type="account" placeholder="请输入" />
+                </el-form-item>
+                <el-form-item>
+                  <el-input v-model="input" type="password" :show-password="true" placeholder="请输入" />
+                </el-form-item>
+                <el-form-item style="width: 65%;">
+                  <el-input v-model="input" placeholder="请输入" />
+                </el-form-item>
+                <el-form-item >
+                  <el-button>login</el-button>
+                </el-form-item>
+            </el-form>
         </el-card>
         </div>
       </el-main>
