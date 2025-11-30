@@ -16,6 +16,6 @@
 <style scoped>
 .app-container {
   min-height: 100vh;
-  padding-bottom: 100px; /* 为固定页脚留出空间 */
+  padding-bottom: 0px; /* 为固定页脚留出空间 */
 }
 </style>

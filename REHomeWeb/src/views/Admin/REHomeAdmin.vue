@@ -1,18 +1,19 @@
 <script setup></script>
 
 <template>
-  <div class="common-layout">
-    <el-container>
-      <el-header style="background-color: white;">
+  <div class="common-layout"> 
+ 
+    <el-container style="">
+      <el-header style="background-color: white;  height: 10vh;">
         Admin
       </el-header>
-
-      <el-main style="background-color: rgb(224, 226, 228);display: flex; height: 100vh;">Main</el-main>
-      
-
-      
+      <el-main style="background-color: rgb(224, 226, 228); height: 90vh;">Main</el-main>
     </el-container>
-  </div>
+     </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+.common-layout {
+  padding-bottom: 0;
+}
+</style>
