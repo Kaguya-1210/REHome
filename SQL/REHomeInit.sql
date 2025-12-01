@@ -25,3 +25,5 @@ CREATE TABLE IF NOT EXISTS admin (
 -- 执行成功提示
 SELECT '数据库初始化完成！' AS result;
 
+insert into admin (account, password)
+values ('admin', '123456');
