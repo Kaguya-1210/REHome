@@ -5,5 +5,6 @@ import w7insvnter.com.rehome.admin.pojo.entity.AdminInfo;
 
 @Repository
 public interface AdminMapper {
-    AdminInfo getByAccount(String account);
+   
+    AdminInfo login(String account, String password);
 }
