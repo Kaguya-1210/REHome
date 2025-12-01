@@ -20,9 +20,14 @@ public class AdminSeviceImpl implements AdminService {
     public AdminInfo login(String account, String password) {
         AdminInfo data = adminMapper.login(account, password);
         log.info("data:{}", data);
-        if (!data.getAccount().equals(account) && !data.getPassword().equals(password)) {
+        // 添加空检查，避免空指针异常
+        if (data == null) {
             throw new ServiceException(StatusCode.PASSWORD_ERROR);
         }
-        return data	;
+        // 检查账号密码是否匹配
+        if (!data.getAccount().equals(account) || !data.getPassword().equals(password)) {
+            throw new ServiceException(StatusCode.PASSWORD_ERROR);
+        }
+        return data;
     }
 }
