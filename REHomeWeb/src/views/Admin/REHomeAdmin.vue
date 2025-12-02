@@ -2,20 +2,19 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled, Lock, ChatSquare } from '@element-plus/icons-vue'
-
+import axios from 'axios'
 // 表单引用，用于表单验证和控制
 const formRef = ref()
 
 // 登录表单数据模型
 const form = ref({
-  username: '', // 用户名
-  password: '', // 密码
-  captcha: ''   // 验证码
+  account: '', // 用户名
+  password: '' // 密码
 })
 
 // 表单验证规则
 const rules = {
-  username: [
+  account: [
     { required: true, message: '请输入用户名', trigger: 'blur' },
     { min: 2, max: 20, message: '用户名长度在 2 到 20 个字符', trigger: 'blur' }
   ],
@@ -41,8 +40,17 @@ const handleLogin = () => {
       // 模拟登录请求
       console.log('登录表单验证通过，提交数据:', form.value)
       // 这里可以添加实际的登录API调用
-      ElMessage.success('登录成功')
-      // 登录成功后的路由跳转逻辑可以在这里添加
+      axios.post(BASE_URL + '/admin/login', form.value).then(res => { 
+        if (res.data.code === 2000) {
+          // 登录成功
+          ElMessage.success('登录成功')
+          // 跳转到首页
+          window.location.href = '/'
+        } else {
+          // 登录失败
+          ElMessage.error('登录失败，请检查用户名和密码')
+        }
+      })
     } else {
       console.log('登录表单验证失败')
       ElMessage.error('请检查表单输入')
@@ -94,7 +102,7 @@ const refreshCaptcha = () => {
               <!-- 用户名输入框 -->
               <el-form-item prop="username">
                 <el-input 
-                  v-model="form.username" 
+                  v-model="form.account" 
                   type="text" 
                   placeholder="请输入用户名"
                 >

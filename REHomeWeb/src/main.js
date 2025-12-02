@@ -18,6 +18,10 @@ for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
 
+const BASE_URL = 'http://localhost:8080';
+window.BASE_URL = BASE_URL;
+app.config.globalProperties.BASE_URL = BASE_URL;
+
 app.use(createPinia())
 app.use(router)
 app.use(ElementPlus)
