@@ -9,7 +9,12 @@ const routes = [
   {
     path: '/admin',
     name: 'admin',
-    component: () => import('@/views/Admin/REHomeAdmin.vue'),
+    component: () => import('@/views/Admin/Login.vue'),
+  },
+  {
+    path: '/admin/home',
+    name: 'admin-home',
+    component: () => import('@/views/Admin/Home.vue'),
   }
 ]
 

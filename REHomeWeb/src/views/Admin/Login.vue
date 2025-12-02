@@ -42,10 +42,8 @@ const handleLogin = () => {
       // 这里可以添加实际的登录API调用
       axios.post(BASE_URL + '/admin/login', form.value).then(res => { 
         if (res.data.code === 2000) {
-          // 登录成功
-          ElMessage.success('登录成功')
           // 跳转到首页
-          window.location.href = '/'
+          window.location.href = '/admin/home'
         } else {
           // 登录失败
           ElMessage.error('登录失败，请检查用户名和密码')
