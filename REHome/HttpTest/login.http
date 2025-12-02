@@ -1,9 +1,0 @@
-### 测试登录接口
-POST http://localhost:8080/admin/login
-Content-Type: application/json
-
-{
-  "account": "ad1min",
-  "password": "123456"
-
-}
