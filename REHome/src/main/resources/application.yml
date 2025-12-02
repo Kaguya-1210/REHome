@@ -30,3 +30,15 @@ spring:
         min-idle: 2
         # 最大等待时间（-1表示无限制，默认-1）
         max-wait: -1ms
+dustlight:
+  captcha:
+    default:
+      store:
+        name: "redisCodeStore"
+    generator:
+      random-string:
+        chars: "ABCDEFGHJKMNPQRSTWXYZabcdefhjkmnprstwxyz2345678"
+        length: 4
+    store:
+      redis:
+        key-prefix: "CAPTCHA_CODE"

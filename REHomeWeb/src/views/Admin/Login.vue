@@ -3,14 +3,18 @@ import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled, Lock, ChatSquare } from '@element-plus/icons-vue'
 import axios from 'axios'
+const BASE_URL = 'http://localhost:8080'
+axios.defaults.withCredentials = true
 // 表单引用，用于表单验证和控制
 const formRef = ref()
 
 // 登录表单数据模型
 const form = ref({
-  account: '', // 用户名
-  password: '' // 密码
+  account: '',
+  password: '',
+  captcha: ''
 })
+const captchaSrc = ref(`${BASE_URL}/captcha`)
 
 // 表单验证规则
 const rules = {
@@ -40,7 +44,10 @@ const handleLogin = () => {
       // 模拟登录请求
       console.log('登录表单验证通过，提交数据:', form.value)
       // 这里可以添加实际的登录API调用
-      axios.post(BASE_URL + '/admin/login', form.value).then(res => { 
+      axios.post(`${BASE_URL}/admin/login?code=${encodeURIComponent(form.value.captcha)}`, {
+        account: form.value.account,
+        password: form.value.password
+      }).then(res => { 
         if (res.data.code === 2000) {
           // 跳转到首页
           window.location.href = '/admin/home'
@@ -61,8 +68,7 @@ const handleLogin = () => {
  * 实际项目中这里应该调用后端API获取新的验证码
  */
 const refreshCaptcha = () => {
-  console.log('刷新验证码')
-  // 验证码刷新逻辑
+  captchaSrc.value = `${BASE_URL}/captcha?ts=${Date.now()}`
 }
 </script>
 
@@ -98,7 +104,7 @@ const refreshCaptcha = () => {
               class="login-form"
             >
               <!-- 用户名输入框 -->
-              <el-form-item prop="username">
+              <el-form-item prop="account">
                 <el-input 
                   v-model="form.account" 
                   type="text" 
@@ -137,7 +143,7 @@ const refreshCaptcha = () => {
                 </el-input>
                 <!-- 验证码图片区域 -->
                 <div class="captcha-image" @click="refreshCaptcha">
-                  <el-text type="info">点击刷新验证码</el-text>
+                  <img :src="captchaSrc" alt="验证码" style="width: 150px; height: 50px;" />
                 </div>
               </el-form-item>
               
@@ -257,8 +263,8 @@ const refreshCaptcha = () => {
 
 /* 验证码图片样式 */
 .captcha-image {
-  width: 120px;
-  height: 40px;
+  width: 150px;
+  height: 50px;
   background-color: #f0f2f5;
   border-radius: 4px;
   display: flex;
