@@ -1,7 +1,6 @@
 package w7insvnter.com.rehome.admin.pojo.entity;
 
 import java.time.LocalDateTime;
-import lombok.Data;
 import lombok.Getter;
 
 @Getter
