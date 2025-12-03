@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="w7insvnter.com.rehome.admin.mapper.AdminMapper">
-    <select id="login" resultType="w7insvnter.com.rehome.admin.pojo.entity.AdminInfo">
-        SELECT * FROM admin WHERE account = #{account} AND password = #{password}
+    <select id="findByAccount" resultType="w7insvnter.com.rehome.admin.pojo.entity.AdminInfo">
+        SELECT id, account, password, created_at AS createdAt, updated_at AS updatedAt
+        FROM admin WHERE account = #{account}
+        LIMIT 1
     </select>
+    <update id="updatePasswordByAccount">
+        UPDATE admin SET password = #{password}, updated_at = NOW() WHERE account = #{account}
+    </update>
 </mapper>

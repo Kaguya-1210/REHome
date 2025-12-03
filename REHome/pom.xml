@@ -44,19 +44,40 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
             <version>2.10.1</version>
         </dependency>
         <dependency>
-             <groupId>cn.dustlight.captcha</groupId>
-                <artifactId>captcha-core</artifactId>
-             <version>1.0.1</version>
+            <groupId>cn.dustlight.captcha</groupId>
+            <artifactId>captcha-core</artifactId>
+            <version>1.0.1</version>
         </dependency>
         <dependency>
             <groupId>cn.dustlight.captcha</groupId>
             <artifactId>redis-store</artifactId>
             <version>1.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-api</artifactId>
+            <version>0.11.5</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-impl</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.jsonwebtoken</groupId>
+            <artifactId>jjwt-jackson</artifactId>
+            <version>0.11.5</version>
+            <scope>runtime</scope>
         </dependency>
         <dependency>
             <groupId>javax.annotation</groupId>

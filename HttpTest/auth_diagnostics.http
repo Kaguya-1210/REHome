@@ -1,0 +1,42 @@
+### 1) 基础 GET 请求测试
+GET http://localhost:8080/
+Accept: application/json
+
+### 2) 带认证 Cookie 的 GET 检查
+GET http://localhost:8080/auth/check
+Accept: application/json
+Cookie: access_token={{access_token}}
+
+### 3) 登录（验证码）并写入 Cookie
+POST http://localhost:8080/admin/login?code={{code}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "account": "admin",
+  "password": "123456"
+}
+
+### 4) 刷新令牌（支持 Cookie 与 Authorization）
+POST http://localhost:8080/auth/refresh
+Accept: application/json
+Cookie: refresh_token={{refresh_token}}
+
+### 5) 跨域 CORS 测试（模拟浏览器预检）
+OPTIONS http://localhost:8080/admin/login?code=0000
+Origin: http://localhost:5173
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: content-type,x-xsrf-token
+
+### 6) 跨域带 Cookie 的 POST（需服务器允许并开启 withCredentials）
+POST http://localhost:8080/admin/login?code={{code}}
+Origin: http://localhost:5173
+Accept: application/json
+Content-Type: application/json
+Cookie: XSRF-TOKEN={{xsrf_token}}; access_token={{access_token}}; refresh_token={{refresh_token}}
+X-XSRF-TOKEN: {{xsrf_token}}
+
+{
+  "account": "admin",
+  "password": "123456"
+}

@@ -2,9 +2,10 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UserFilled, Lock, ChatSquare } from '@element-plus/icons-vue'
-import axios from 'axios'
-const BASE_URL = 'http://localhost:8080'
-axios.defaults.withCredentials = true
+import axios from '@/services/http'
+import { login } from '@/services/auth'
+import { useAuthStore } from '@/stores/auth'
+const auth = useAuthStore()
 // 表单引用，用于表单验证和控制
 const formRef = ref()
 
@@ -14,7 +15,7 @@ const form = ref({
   password: '',
   captcha: ''
 })
-const captchaSrc = ref(`${BASE_URL}/captcha`)
+const captchaSrc = ref(`${axios.defaults.baseURL}/captcha`)
 
 // 表单验证规则
 const rules = {
@@ -44,18 +45,17 @@ const handleLogin = () => {
       // 模拟登录请求
       console.log('登录表单验证通过，提交数据:', form.value)
       // 这里可以添加实际的登录API调用
-      axios.post(`${BASE_URL}/admin/login?code=${encodeURIComponent(form.value.captcha)}`, {
-        account: form.value.account,
-        password: form.value.password
-      }).then(res => { 
-        if (res.data.code === 2000) {
-          // 跳转到首页
-          window.location.href = '/admin/home'
-        } else {
-          // 登录失败
-          ElMessage.error('登录失败，请检查用户名和密码')
-        }
-      })
+      login({ account: form.value.account, password: form.value.password, code: form.value.captcha })
+        .then(res => {
+          const ok = res?.data?.code === 2000
+          if (ok) {
+            const user = res?.data?.data?.user || null
+            if (user) auth.setUser(user)
+            window.location.href = '/admin/home'
+          } else {
+            ElMessage.error('登录失败，请检查用户名和密码')
+          }
+        })
     } else {
       console.log('登录表单验证失败')
       ElMessage.error('请检查表单输入')

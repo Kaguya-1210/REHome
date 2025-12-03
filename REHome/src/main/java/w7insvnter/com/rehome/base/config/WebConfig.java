@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import w7insvnter.com.rehome.base.security.CaptchaRateLimitInterceptor;
+import w7insvnter.com.rehome.base.web.RequestIdInterceptor;
 import java.time.Duration;
 
 @Configuration
@@ -27,7 +28,8 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(new CaptchaRateLimitInterceptor(stringRedisTemplate, 30, Duration.ofMinutes(1)))
-                .addPathPatterns("/captcha/**");
+        registry.addInterceptor(new RequestIdInterceptor()).addPathPatterns("/**");
+        registry.addInterceptor(new CaptchaRateLimitInterceptor(stringRedisTemplate, 50, Duration.ofMinutes(1)))
+                .addPathPatterns("/admin/login");
     }
 }

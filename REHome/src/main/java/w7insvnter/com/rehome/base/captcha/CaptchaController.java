@@ -65,6 +65,8 @@ public class CaptchaController {
         byte[] bytes = baos.toByteArray();
         session.setAttribute("CAPTCHA_CODE", sb.toString());
         response.setContentType("image/png");
+        response.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
+        response.setHeader("Pragma", "no-cache");
         return bytes;
     }
 }
