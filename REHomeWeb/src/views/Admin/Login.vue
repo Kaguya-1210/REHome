@@ -53,7 +53,8 @@ const handleLogin = () => {
             if (user) auth.setUser(user)
             window.location.href = '/admin/home'
           } else {
-            ElMessage.error('登录失败，请检查用户名和密码')
+            ElMessage.error(res?.data?.msg)
+            refreshCaptcha()
           }
         })
     } else {
