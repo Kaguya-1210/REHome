@@ -31,13 +31,13 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(c -> c.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .ignoringRequestMatchers("/admin/login", "/auth/refresh", "/auth/check"))
+                        .ignoringRequestMatchers("/admin/login", "/auth/refresh", "/auth/check", "/auth/logout", "/admin/logout"))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(h -> h.frameOptions(f -> f.sameOrigin())
                         .contentSecurityPolicy(cp -> cp.policyDirectives("default-src 'self'; img-src 'self' data:; script-src 'self'; style-src 'self' 'unsafe-inline';"))
                         .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31536000)))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/captcha", "/admin/login", "/auth/refresh", "/auth/check").permitAll()
+                        .requestMatchers("/captcha", "/admin/login", "/auth/refresh", "/auth/check", "/auth/logout", "/admin/logout").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         if (requireHttps) {

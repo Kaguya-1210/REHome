@@ -1,6 +1,16 @@
 <script setup>
-
+import { ref } from 'vue'
+import { logout as apiLogout } from '@/services/auth'
 const avatarSize = 50;
+
+const logout = async () => {
+  try {
+    await apiLogout()
+  } catch (err) {
+    console.log('退出登录失败', err)
+  }
+}
+
 
 </script>
 
