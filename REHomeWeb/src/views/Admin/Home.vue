@@ -13,18 +13,23 @@ const avatarSize = 50;
           <el-text type="primary" class="logo-text">REHomeAdmin</el-text>
         </div>
         <div style="position: absolute; right: 2%;"> 
-            <el-dropdown trigger="hover">
+            <el-dropdown trigger="click">
                     <el-avatar :size="avatarSize" />
                 <template #dropdown>
                     <el-dropdown-menu>
-                        <el-card class="dropdown-card">
+                        <el-card class="dropdown-card" body-style="padding: 0;" header-class="card-header" footer-class="card-footer">
                             <template #header>
-                                <div class="card-header">
-                                    UserName
+                                <div class="name">
+                                    <el-text size="large">W7insvnter</el-text>
                                 </div>
                             </template>
-                            <template #footer>
-                                logout
+                            <div class="content">
+                              <el-text>占位</el-text>
+                            </div>
+                            <template #footer >
+                                <div style="display: flex; justify-content: center; align-items: center;">
+                                  <el-button type="info" round size="lagre" @click="logout">退出登录</el-button>
+                                </div>
                             </template>
                         </el-card>
                     </el-dropdown-menu>
@@ -63,9 +68,25 @@ const avatarSize = 50;
 }
 .dropdown-card {
     width: 200px;
-    height: 200px;
+    height: 100%;
 }
 .el-dropdown-menu{
     padding: 0;
+}
+.name{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+:deep(.card-header) {
+  border-bottom: none;
+}
+:deep(.card-footer) {
+  border-top: none;
+}
+.content{
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 </style>
