@@ -54,5 +54,16 @@ public class AdminController {
         response.addHeader("Set-Cookie", refreshCookie.toString());
         return new JsonResult(java.util.Map.of("user", adminInfo));
     }
-    
+    @PostMapping("/logout")
+    public JsonResult logout(HttpServletResponse response) {
+        ResponseCookie accessCookie = ResponseCookie.from("access_token", "")
+                .httpOnly(true).secure(requireHttps).sameSite("Strict").path("/")
+                .maxAge(0).build();
+        ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", "")
+                .httpOnly(true).secure(requireHttps).sameSite("Strict").path("/")
+                .maxAge(0).build();
+        response.addHeader("Set-Cookie", accessCookie.toString());
+        response.addHeader("Set-Cookie", refreshCookie.toString());
+        return new JsonResult(StatusCode.SUCCESS.getCode(), "退出登录成功");
+    }
 }
