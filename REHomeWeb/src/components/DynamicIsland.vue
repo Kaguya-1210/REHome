@@ -1,5 +1,5 @@
 <template>
-  <div class="island-wrapper" @mouseenter="onEnter" @mouseleave="onLeave">
+  <div ref="wrapperEl" class="island-wrapper" :class="{ dragging }" :style="wrapperStyle" @mouseenter="onEnter" @mouseleave="onLeave">
     <div ref="islandEl" class="island" :class="islandClasses" @pointermove="onPointerMove" @pointerleave="onPointerLeave" @pointerdown="onPointerDown" @pointerup="onPointerUp" @pointercancel="onPointerUp">
       <div style="padding-right: 15px;display: flex; align-items: center;">
       <el-avatar src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
@@ -29,7 +29,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onBeforeUnmount } from 'vue'
+import { ref, computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { logout } from '@/services/auth'
 
@@ -38,8 +38,26 @@ const router = useRouter()
 let hideTimer
 let animTimer
 const islandEl = ref(null)
+const wrapperEl = ref(null)
 const pressed = ref(false)
 const animState = ref('')
+const dragging = ref(false)
+const dragPointerId = ref(null)
+const dragStartClientX = ref(0)
+const dragStartClientY = ref(0)
+const dragStartDx = ref(0)
+const dragStartDy = ref(0)
+const dx = ref(0)
+const dy = ref(0)
+
+const STORAGE_KEY = 'rehome.dynamicIsland.position.v1'
+const BASE_TOP = 12
+const EDGE_SNAP_THRESHOLD = 50
+const VIEWPORT_MARGIN = 8
+
+const wrapperStyle = computed(() => ({
+  transform: `translateX(-50%) translate3d(${dx.value.toFixed(2)}px, ${dy.value.toFixed(2)}px, 0)`
+}))
 
 const islandClasses = computed(() => ({
   expanded: expanded.value,
@@ -62,6 +80,150 @@ const motion = {
   tY: 0,
   tRx: 0,
   tRy: 0
+}
+
+let dragAnimRaf = null
+let dragAnimStart = 0
+let dragAnimFromX = 0
+let dragAnimFromY = 0
+let dragAnimOverX = 0
+let dragAnimOverY = 0
+let dragAnimToX = 0
+let dragAnimToY = 0
+
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+const getBounds = () => {
+  const el = wrapperEl.value
+  const w = el ? el.offsetWidth : 0
+  const h = el ? el.offsetHeight : 0
+  const vw = window.innerWidth
+  const vh = window.innerHeight
+  const baseLeft = vw / 2 - w / 2
+  const baseTop = BASE_TOP
+  const minDx = VIEWPORT_MARGIN - baseLeft
+  const maxDx = (vw - VIEWPORT_MARGIN - w) - baseLeft
+  const minDy = VIEWPORT_MARGIN - baseTop
+  const maxDy = (vh - VIEWPORT_MARGIN - h) - baseTop
+  return { w, h, vw, vh, baseLeft, baseTop, minDx, maxDx, minDy, maxDy }
+}
+
+const clampToViewport = (x, y) => {
+  const b = getBounds()
+  return {
+    x: clamp(x, b.minDx, b.maxDx),
+    y: clamp(y, b.minDy, b.maxDy)
+  }
+}
+
+const snapToEdges = (x, y) => {
+  const b = getBounds()
+  const left = b.baseLeft + x
+  const top = b.baseTop + y
+  const rightGap = b.vw - (left + b.w)
+  const bottomGap = b.vh - (top + b.h)
+
+  let targetLeft = left
+  let targetTop = top
+
+  if (left < EDGE_SNAP_THRESHOLD) targetLeft = VIEWPORT_MARGIN
+  if (rightGap < EDGE_SNAP_THRESHOLD) targetLeft = b.vw - VIEWPORT_MARGIN - b.w
+  if (top < EDGE_SNAP_THRESHOLD) targetTop = VIEWPORT_MARGIN
+  if (bottomGap < EDGE_SNAP_THRESHOLD) targetTop = b.vh - VIEWPORT_MARGIN - b.h
+
+  return {
+    x: targetLeft - b.baseLeft,
+    y: targetTop - b.baseTop
+  }
+}
+
+const cubicBezier = (p1x, p1y, p2x, p2y) => {
+  const cx = 3 * p1x
+  const bx = 3 * (p2x - p1x) - cx
+  const ax = 1 - cx - bx
+
+  const cy = 3 * p1y
+  const by = 3 * (p2y - p1y) - cy
+  const ay = 1 - cy - by
+
+  const sampleX = (t) => ((ax * t + bx) * t + cx) * t
+  const sampleY = (t) => ((ay * t + by) * t + cy) * t
+  const sampleDX = (t) => (3 * ax * t + 2 * bx) * t + cx
+
+  const solveT = (x) => {
+    let t = x
+    for (let i = 0; i < 8; i++) {
+      const x2 = sampleX(t) - x
+      if (Math.abs(x2) < 1e-6) return t
+      const d = sampleDX(t)
+      if (Math.abs(d) < 1e-6) break
+      t = t - x2 / d
+    }
+    let t0 = 0
+    let t1 = 1
+    t = x
+    while (t0 < t1) {
+      const x2 = sampleX(t)
+      if (Math.abs(x2 - x) < 1e-6) return t
+      if (x > x2) t0 = t
+      else t1 = t
+      t = (t1 - t0) * 0.5 + t0
+    }
+    return t
+  }
+
+  return (x) => sampleY(solveT(x))
+}
+
+const ease = cubicBezier(0.25, 0.1, 0.25, 1.0)
+
+const cancelDragAnim = () => {
+  if (dragAnimRaf) cancelAnimationFrame(dragAnimRaf)
+  dragAnimRaf = null
+}
+
+const animateDragTo = (toX, toY) => {
+  cancelDragAnim()
+  const fromX = dx.value
+  const fromY = dy.value
+
+  const overX = toX + (toX - fromX) * 0.05
+  const overY = toY + (toY - fromY) * 0.05
+
+  dragAnimStart = performance.now()
+  dragAnimFromX = fromX
+  dragAnimFromY = fromY
+  dragAnimOverX = overX
+  dragAnimOverY = overY
+  dragAnimToX = toX
+  dragAnimToY = toY
+
+  const duration = 300
+  const split = 0.72
+
+  const step = (now) => {
+    const t = clamp((now - dragAnimStart) / duration, 0, 1)
+    if (t < split) {
+      const tt = ease(t / split)
+      dx.value = dragAnimFromX + (dragAnimOverX - dragAnimFromX) * tt
+      dy.value = dragAnimFromY + (dragAnimOverY - dragAnimFromY) * tt
+    } else {
+      const tt = ease((t - split) / (1 - split))
+      dx.value = dragAnimOverX + (dragAnimToX - dragAnimOverX) * tt
+      dy.value = dragAnimOverY + (dragAnimToY - dragAnimOverY) * tt
+    }
+    if (t < 1) {
+      dragAnimRaf = requestAnimationFrame(step)
+    } else {
+      dragAnimRaf = null
+      dx.value = dragAnimToX
+      dy.value = dragAnimToY
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ dx: dx.value, dy: dy.value }))
+      } catch {}
+    }
+  }
+  dragAnimRaf = requestAnimationFrame(step)
 }
 
 const setVars = () => {
@@ -135,6 +297,14 @@ const onLeave = () => {
 }
 
 const onPointerMove = (e) => {
+  if (dragging.value) {
+    const nextX = dragStartDx.value + (e.clientX - dragStartClientX.value)
+    const nextY = dragStartDy.value + (e.clientY - dragStartClientY.value)
+    const clampedPos = clampToViewport(nextX, nextY)
+    dx.value = clampedPos.x
+    dy.value = clampedPos.y
+    return
+  }
   const el = islandEl.value
   if (!el) return
   const rect = el.getBoundingClientRect()
@@ -152,15 +322,38 @@ const onPointerMove = (e) => {
 }
 
 const onPointerLeave = () => {
+  if (dragging.value) return
   driveTo(0, 0, 0, 0)
 }
 
-const onPointerDown = () => {
+const onPointerDown = (event) => {
+  const el = islandEl.value
+  if (!el) return
+  if (event && event.target && event.target.closest && event.target.closest('.el-button')) return
   pressed.value = true
+  if (event && typeof event.pointerId === 'number') {
+    dragging.value = true
+    dragPointerId.value = event.pointerId
+    dragStartClientX.value = event.clientX
+    dragStartClientY.value = event.clientY
+    dragStartDx.value = dx.value
+    dragStartDy.value = dy.value
+    cancelDragAnim()
+    try { el.setPointerCapture(event.pointerId) } catch {}
+  }
 }
 
-const onPointerUp = () => {
+const onPointerUp = (event) => {
   pressed.value = false
+  if (!dragging.value) return
+  dragging.value = false
+  if (event && typeof event.pointerId === 'number') {
+    try { islandEl.value && islandEl.value.releasePointerCapture(event.pointerId) } catch {}
+  }
+  const clampedPos = clampToViewport(dx.value, dy.value)
+  const snapped = snapToEdges(clampedPos.x, clampedPos.y)
+  const target = clampToViewport(snapped.x, snapped.y)
+  animateDragTo(target.x, target.y)
 }
 
 const goAdminHome = () => {
@@ -182,6 +375,30 @@ onBeforeUnmount(() => {
   if (hideTimer) clearTimeout(hideTimer)
   if (animTimer) clearTimeout(animTimer)
   if (motion.raf) cancelAnimationFrame(motion.raf)
+  cancelDragAnim()
+  window.removeEventListener('resize', handleResize)
+})
+
+const handleResize = () => {
+  const clampedPos = clampToViewport(dx.value, dy.value)
+  dx.value = clampedPos.x
+  dy.value = clampedPos.y
+}
+
+onMounted(() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null')
+    if (saved && typeof saved.dx === 'number' && typeof saved.dy === 'number') {
+      dx.value = saved.dx
+      dy.value = saved.dy
+    }
+  } catch {}
+  requestAnimationFrame(() => {
+    const clampedPos = clampToViewport(dx.value, dy.value)
+    dx.value = clampedPos.x
+    dy.value = clampedPos.y
+  })
+  window.addEventListener('resize', handleResize, { passive: true })
 })
 </script>
 
@@ -202,11 +419,16 @@ onBeforeUnmount(() => {
 
 .island-wrapper {
   position: fixed;
-  top: 16px;
+  top: 12px;
   left: 50%;
-  transform: translateX(-50%);
   z-index: 1000;
   pointer-events: none;
+  opacity: 1;
+  transition: opacity 120ms ease;
+}
+
+.island-wrapper.dragging {
+  opacity: 0.8;
 }
 
 .island {
@@ -232,6 +454,7 @@ onBeforeUnmount(() => {
   will-change: transform, height;
   backface-visibility: hidden;
   contain: layout paint;
+  touch-action: none;
 }
 
 .island::before {
