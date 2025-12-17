@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS admin (
     id INT AUTO_INCREMENT PRIMARY KEY,
     account VARCHAR(50) NOT NULL UNIQUE COMMENT '管理员账号',
     password VARCHAR(255) NOT NULL COMMENT '加密后的密码',
+    username VARCHAR(20) COMMENT '管理员用户名',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_account (account) -- 为账号字段添加索引
@@ -25,5 +26,5 @@ CREATE TABLE IF NOT EXISTS admin (
 -- 执行成功提示
 SELECT '数据库初始化完成！' AS result;
 
-insert into admin (account, password)
-values ('admin', '123456');
+insert into admin (account, password,username)
+values ('admin', '123456','W7insvnter');

@@ -1,18 +1,21 @@
 <template>
-  <div class="island-wrapper" @mouseenter="expanded = true" @mouseleave="expanded = false">
-    <div class="island" :class="{ expanded }" @click="toggle">
+  <div class="island-wrapper" @mouseenter="onEnter" @mouseleave="onLeave">
+    <div class="island" :class="{ expanded }">
+      <div style="padding-right: 15px;display: flex; align-items: center;">
+      <el-avatar src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
+      </div>
       <div class="island-main">
         <div class="island-title">REHome Admin</div>
         <div class="island-status">已登录</div>
       </div>
       <transition name="island-actions">
         <div v-if="expanded" class="island-actions">
-          <el-button size="small" text @click.stop="goHome">
-            <el-icon><HomeFilled /></el-icon>
-            首页
+          <el-button size="small" text @click.stop="goAdminHome">
+            <el-icon><Menu /></el-icon>
+            菜单
           </el-button>
-          <el-button size="small" text @click.stop="goSettings">
-            <el-icon><Tools /></el-icon>
+          <el-button size="small" text @click.stop="goFrontend">
+            <el-icon><Setting /></el-icon>
             设置
           </el-button>
           <el-button size="small" text type="danger" @click.stop="handleLogout">
@@ -32,17 +35,32 @@ import { logout } from '@/services/auth'
 
 const expanded = ref(false)
 const router = useRouter()
+let hideTimer
 
-const toggle = () => {
-  expanded.value = !expanded.value
+const onEnter = () => {
+  if (hideTimer) {
+    clearTimeout(hideTimer)
+    hideTimer = null
+  }
+  expanded.value = true
 }
 
-const goHome = () => {
+const onLeave = () => {
+  if (hideTimer) {
+    clearTimeout(hideTimer)
+  }
+  hideTimer = setTimeout(() => {
+    expanded.value = false
+    hideTimer = null
+  }, 130)
+}
+
+const goAdminHome = () => {
   router.push('/admin/home')
 }
 
-const goSettings = () => {
-  router.push('/admin/home')
+const goFrontend = () => {
+  router.push('/')
 }
 
 const handleLogout = async () => {
@@ -76,18 +94,24 @@ const handleLogout = async () => {
   padding: 0 16px;
   color: #fff;
   cursor: pointer;
-  transition: all 0.25s ease;
+  transition: height 0.25s cubic-bezier(.4, 0, .2, 1),
+              transform 0.25s cubic-bezier(.4, 0, .2, 1),
+              box-shadow 0.25s cubic-bezier(.4, 0, .2, 1);
   pointer-events: auto;
+  overflow: hidden;
 }
 
 .island.expanded {
   height: 56px;
   max-width: 520px;
+  transform: scale(1.02);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3);
 }
 
 .island-main {
   display: flex;
   flex-direction: column;
+  padding-right: 15px;
 }
 
 .island-title {
@@ -128,4 +152,3 @@ const handleLogout = async () => {
   }
 }
 </style>
-
