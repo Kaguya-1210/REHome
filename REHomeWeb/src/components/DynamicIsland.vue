@@ -1,29 +1,31 @@
 <template>
   <div ref="wrapperEl" class="island-wrapper" :class="{ dragging }" :style="wrapperStyle" @mouseenter="onEnter" @mouseleave="onLeave">
     <div ref="islandEl" class="island" :class="islandClasses" @pointermove="onPointerMove" @pointerleave="onPointerLeave" @pointerdown="onPointerDown" @pointerup="onPointerUp" @pointercancel="onPointerUp">
-      <div style="padding-right: 15px;display: flex; align-items: center;">
-      <el-avatar src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
-      </div>
-      <div class="island-main">
-        <div class="island-title">REHome Admin</div>
-        <div class="island-status">已登录</div>
-      </div>
-      <transition name="island-actions">
-        <div v-if="expanded" class="island-actions">
-          <el-button size="small" text @click.stop="goAdminHome">
-            <el-icon><Menu /></el-icon>
-            菜单
-          </el-button>
-          <el-button size="small" text @click.stop="goFrontend">
-            <el-icon><Setting /></el-icon>
-            设置
-          </el-button>
-          <el-button size="small" text type="danger" @click.stop="handleLogout">
-            <el-icon><SwitchButton /></el-icon>
-            退出
-          </el-button>
+      <div ref="innerEl" class="island-inner">
+        <div class="island-avatar">
+          <el-avatar src="https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png" />
         </div>
-      </transition>
+        <div class="island-main">
+          <div class="island-title">REHome Admin</div>
+          <div class="island-status">已登录</div>
+        </div>
+        <transition name="island-actions">
+          <div v-if="expanded" class="island-actions">
+            <el-button size="small" text @click.stop="goAdminHome">
+              <el-icon><Menu /></el-icon>
+              菜单
+            </el-button>
+            <el-button size="small" text @click.stop="goFrontend">
+              <el-icon><Setting /></el-icon>
+              设置
+            </el-button>
+            <el-button size="small" text type="danger" @click.stop="handleLogout">
+              <el-icon><SwitchButton /></el-icon>
+              退出
+            </el-button>
+          </div>
+        </transition>
+      </div>
     </div>
   </div>
 </template>
@@ -33,11 +35,20 @@ import { ref, computed, onBeforeUnmount, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { logout } from '@/services/auth'
 
+const props = defineProps({
+  edgeThresholdPx: { type: Number, default: 50 },
+  orientationAnimDurationMs: { type: Number, default: 300 },
+  orientationChangeCallbackName: { type: String, default: '' }
+})
+
+const emit = defineEmits(['orientationChange'])
+
 const expanded = ref(false)
 const router = useRouter()
 let hideTimer
 let animTimer
 const islandEl = ref(null)
+const innerEl = ref(null)
 const wrapperEl = ref(null)
 const pressed = ref(false)
 const animState = ref('')
@@ -49,11 +60,14 @@ const dragStartDx = ref(0)
 const dragStartDy = ref(0)
 const dx = ref(0)
 const dy = ref(0)
+const layout = ref('horizontal')
+const dock = ref(null)
 
 const STORAGE_KEY = 'rehome.dynamicIsland.position.v1'
 const BASE_TOP = 12
 const EDGE_SNAP_THRESHOLD = 50
 const VIEWPORT_MARGIN = 8
+const EDGE_VERTICAL_EXIT_PADDING = 18
 
 const wrapperStyle = computed(() => ({
   transform: `translateX(-50%) translate3d(${dx.value.toFixed(2)}px, ${dy.value.toFixed(2)}px, 0)`
@@ -63,7 +77,10 @@ const islandClasses = computed(() => ({
   expanded: expanded.value,
   expanding: animState.value === 'expanding',
   collapsing: animState.value === 'collapsing',
-  pressed: pressed.value
+  pressed: pressed.value,
+  vertical: layout.value === 'vertical',
+  dockLeft: dock.value === 'left',
+  dockRight: dock.value === 'right'
 }))
 
 const motion = {
@@ -176,6 +193,85 @@ const cubicBezier = (p1x, p1y, p2x, p2y) => {
 }
 
 const ease = cubicBezier(0.25, 0.1, 0.25, 1.0)
+let layoutAnim
+let orientationRaf
+
+const requestOrientationUpdate = () => {
+  if (orientationRaf) return
+  orientationRaf = requestAnimationFrame(() => {
+    orientationRaf = null
+    updateOrientation()
+  })
+}
+
+const getEdgeGaps = () => {
+  const b = getBounds()
+  const left = b.baseLeft + dx.value
+  const rightGap = b.vw - (left + b.w)
+  return { left, rightGap }
+}
+
+const playOrientationAnimation = (side) => {
+  const el = innerEl.value
+  if (!el || typeof el.animate !== 'function') return
+  try { layoutAnim && layoutAnim.cancel() } catch {}
+  const dir = side === 'left' ? -1 : 1
+  const deg = dir * 7
+  layoutAnim = el.animate(
+    [
+      { transform: 'rotateZ(0deg)' },
+      { transform: `rotateZ(${deg}deg)` },
+      { transform: 'rotateZ(0deg)' }
+    ],
+    {
+      duration: props.orientationAnimDurationMs,
+      easing: 'cubic-bezier(0.25, 0.1, 0.25, 1.0)'
+    }
+  )
+}
+
+const notifyOrientationChange = (nextLayout, nextDock) => {
+  const payload = { layout: nextLayout, dock: nextDock }
+  emit('orientationChange', payload)
+  const name = props.orientationChangeCallbackName
+  if (name && typeof window !== 'undefined' && typeof window[name] === 'function') {
+    try { window[name](payload) } catch {}
+  }
+}
+
+const setOrientation = (nextLayout, nextDock) => {
+  const changed = nextLayout !== layout.value || nextDock !== dock.value
+  if (!changed) return
+  layout.value = nextLayout
+  dock.value = nextDock
+  notifyOrientationChange(nextLayout, nextDock)
+  if (nextLayout === 'vertical' && (nextDock === 'left' || nextDock === 'right')) {
+    playOrientationAnimation(nextDock)
+  }
+}
+
+const updateOrientation = () => {
+  const { left, rightGap } = getEdgeGaps()
+  const enterT = props.edgeThresholdPx
+  const exitT = props.edgeThresholdPx + EDGE_VERTICAL_EXIT_PADDING
+
+  if (layout.value === 'vertical') {
+    if (left > exitT && rightGap > exitT) {
+      setOrientation('horizontal', null)
+    } else {
+      const side = left <= rightGap ? 'left' : 'right'
+      setOrientation('vertical', side)
+    }
+    return
+  }
+
+  if (left < enterT || rightGap < enterT) {
+    const side = left <= rightGap ? 'left' : 'right'
+    setOrientation('vertical', side)
+  } else {
+    setOrientation('horizontal', null)
+  }
+}
 
 const cancelDragAnim = () => {
   if (dragAnimRaf) cancelAnimationFrame(dragAnimRaf)
@@ -212,12 +308,14 @@ const animateDragTo = (toX, toY) => {
       dx.value = dragAnimOverX + (dragAnimToX - dragAnimOverX) * tt
       dy.value = dragAnimOverY + (dragAnimToY - dragAnimOverY) * tt
     }
+    requestOrientationUpdate()
     if (t < 1) {
       dragAnimRaf = requestAnimationFrame(step)
     } else {
       dragAnimRaf = null
       dx.value = dragAnimToX
       dy.value = dragAnimToY
+      requestOrientationUpdate()
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ dx: dx.value, dy: dy.value }))
       } catch {}
@@ -303,6 +401,7 @@ const onPointerMove = (e) => {
     const clampedPos = clampToViewport(nextX, nextY)
     dx.value = clampedPos.x
     dy.value = clampedPos.y
+    requestOrientationUpdate()
     return
   }
   const el = islandEl.value
@@ -376,6 +475,9 @@ onBeforeUnmount(() => {
   if (animTimer) clearTimeout(animTimer)
   if (motion.raf) cancelAnimationFrame(motion.raf)
   cancelDragAnim()
+  if (orientationRaf) cancelAnimationFrame(orientationRaf)
+  orientationRaf = null
+  try { layoutAnim && layoutAnim.cancel() } catch {}
   window.removeEventListener('resize', handleResize)
 })
 
@@ -383,6 +485,7 @@ const handleResize = () => {
   const clampedPos = clampToViewport(dx.value, dy.value)
   dx.value = clampedPos.x
   dy.value = clampedPos.y
+  requestOrientationUpdate()
 }
 
 onMounted(() => {
@@ -397,6 +500,7 @@ onMounted(() => {
     const clampedPos = clampToViewport(dx.value, dy.value)
     dx.value = clampedPos.x
     dy.value = clampedPos.y
+    requestOrientationUpdate()
   })
   window.addEventListener('resize', handleResize, { passive: true })
 })
@@ -433,15 +537,12 @@ onMounted(() => {
 
 .island {
   min-width: 180px;
-  max-width: 520px;
+  max-width: min(520px, calc(100vw - 16px));
   height: 40px;
   border-radius: 20px;
   background: radial-gradient(circle at 10% 10%, #4b8dff, #1f1f2b);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 16px;
+  display: block;
   color: #fff;
   cursor: pointer;
   transition: height 340ms cubic-bezier(.2, .8, .2, 1),
@@ -455,6 +556,59 @@ onMounted(() => {
   backface-visibility: hidden;
   contain: layout paint;
   touch-action: none;
+}
+
+.island-inner {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.island-avatar {
+  display: flex;
+  align-items: center;
+  padding-right: 15px;
+}
+
+.island.vertical {
+  height: 48px;
+}
+
+.island.vertical.expanded {
+  height: 156px;
+}
+
+.island.vertical .island-inner {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto 1fr;
+  column-gap: 10px;
+  row-gap: 10px;
+  align-items: center;
+  justify-content: initial;
+  padding: 10px 12px;
+}
+
+.island.vertical .island-avatar {
+  padding-right: 0;
+}
+
+.island.vertical .island-actions {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.island.vertical .island-actions :deep(.el-button) {
+  width: 100%;
+  justify-content: flex-start;
 }
 
 .island::before {
@@ -483,7 +637,6 @@ onMounted(() => {
 
 .island.expanded {
   height: 56px;
-  max-width: 520px;
   --islandScale: 1.03;
   box-shadow: 0 10px 26px rgba(0, 0, 0, 0.3);
 }
@@ -527,6 +680,10 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   padding-right: 15px;
+}
+
+.island.vertical .island-main {
+  padding-right: 0;
 }
 
 .island-title {
