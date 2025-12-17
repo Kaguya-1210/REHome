@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS admin (
     account VARCHAR(50) NOT NULL UNIQUE COMMENT '管理员账号',
     password VARCHAR(255) NOT NULL COMMENT '加密后的密码',
     username VARCHAR(20) COMMENT '管理员用户名',
+    avatar VARCHAR(255) COMMENT '管理员头像',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     INDEX idx_account (account) -- 为账号字段添加索引
