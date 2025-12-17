@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue'
 import { logout as apiLogout } from '@/services/auth'
+import DynamicIsland from '@/components/DynamicIsland.vue'
 const avatarSize = 50;
 
 const logout = async () => {
@@ -22,33 +23,9 @@ const logout = async () => {
         <div class="logo" >
           <el-text type="primary" class="logo-text">REHomeAdmin</el-text>
         </div>
-        <div style="position: absolute; right: 2%;"> 
-            <el-dropdown trigger="click">
-                    <el-avatar :size="avatarSize" />
-                <template #dropdown>
-                    <el-dropdown-menu>
-                        <el-card class="dropdown-card" body-style="padding: 0;" header-class="card-header" footer-class="card-footer">
-                            <template #header>
-                                <div class="name">
-                                    <el-text size="large">W7insvnter</el-text>
-                                </div>
-                            </template>
-                            <div class="content">
-                              <el-text>占位</el-text>
-                            </div>
-                            <template #footer >
-                                <div style="display: flex; justify-content: center; align-items: center;">
-                                  <el-button type="info" round size="lagre" @click="logout">退出登录</el-button>
-                                </div>
-                            </template>
-                        </el-card>
-                    </el-dropdown-menu>
-                </template>
-            </el-dropdown>
-        </div>
       </el-header>
       <el-main>
-
+        <DynamicIsland />
       </el-main>
     </el-container>
   </div>
